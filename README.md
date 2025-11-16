@@ -33,7 +33,7 @@ That's it.
 
 1. **Download the compose file**
 ```bash
-curl -O https://raw.githubusercontent.com/Cosmofy/monitoring/main/compose.yml
+curl -O https://raw.githubusercontent.com/Cosmofy/sentinal/main/compose.yml
 ```
 
 2. **Start the application**
