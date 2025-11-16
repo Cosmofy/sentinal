@@ -19,7 +19,9 @@ A beautiful, open-source status page monitoring system built with Next.js 15, Ty
 
 ## Screenshots
 
-*(Coming soon)*
+<img src="status-page.png" alt="Status Page" width="600">
+
+<img src="admin-portal.png" alt="Admin Portal" width="600">
 
 ## Quick Start
 
