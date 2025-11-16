@@ -1,0 +1,56 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model StatusPageConfig {
+  id           Int      @id @default(autoincrement())
+  pageTitle    String   @default("Status Page") @map("page_title")
+  companyName  String   @default("My Company") @map("company_name")
+  logoUrl      String?  @map("logo_url")
+  primaryColor String   @default("#10b981") @map("primary_color")
+  headerText   String?  @map("header_text") @db.Text
+  footerText   String?  @map("footer_text") @db.Text
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("status_page_config")
+}
+
+model Endpoint {
+  id                 Int      @id @default(autoincrement())
+  title              String
+  url                String
+  intervalSeconds    Int      @default(60) @map("interval_seconds")
+  expectedStatusCode Int      @default(200) @map("expected_status_code")
+  isActive           Boolean  @default(true) @map("is_active")
+  sortOrder          Int      @default(0) @map("sort_order")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at")
+
+  pings Ping[]
+
+  @@map("endpoints")
+}
+
+model Ping {
+  id             Int      @id @default(autoincrement())
+  endpointId     Int      @map("endpoint_id")
+  timestamp      DateTime @default(now())
+  statusCode     Int?     @map("status_code")
+  responseTimeMs Float?   @map("response_time_ms")
+  success        Boolean
+  errorMessage   String?  @map("error_message") @db.Text
+
+  endpoint Endpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId])
+  @@index([timestamp])
+  @@map("pings")
+}
