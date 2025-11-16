@@ -43,12 +43,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: >
-      sh -c "
-        npx prisma migrate deploy &&
-        npx prisma generate &&
-        node server.js
-      "
 
 volumes:
   postgres_data:
