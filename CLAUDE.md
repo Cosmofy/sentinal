@@ -18,7 +18,7 @@ npx prisma generate                 # Generate Prisma Client
 npx prisma studio                   # Open database GUI
 
 # Development
-npm run dev                         # Start dev server at http://localhost:3000
+npm run dev                         # Start dev server at http://localhost:3000 (Docker uses port 22571)
 
 # Production
 npm run build                       # Build for production
