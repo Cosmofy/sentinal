@@ -2,126 +2,156 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { subDays, format, eachDayOfInterval } from 'date-fns';
 
-export async function GET() {
-  try {
-    // Get status page config (or create default if doesn't exist)
-    let config = await prisma.statusPageConfig.findFirst();
+// In-memory cache
+let cachedData: any = null;
+let cacheTimestamp: number = 0;
+const CACHE_TTL = 30 * 1000; // 30 seconds
 
-    if (!config) {
-      config = await prisma.statusPageConfig.create({
-        data: {},
-      });
+async function computeStatusData() {
+  // Get status page config (or create default if doesn't exist)
+  let config = await prisma.statusPageConfig.findFirst();
+
+  if (!config) {
+    config = await prisma.statusPageConfig.create({
+      data: {},
+    });
+  }
+
+  // Get all active endpoints
+  const endpoints = await prisma.endpoint.findMany({
+    where: { isActive: true },
+    orderBy: { sortOrder: 'asc' },
+  });
+
+  const now = new Date();
+  const ninetyDaysAgo = subDays(now, 90);
+
+  // Fetch all pings for all endpoints in a single query
+  const allPings = await prisma.ping.findMany({
+    where: {
+      endpointId: { in: endpoints.map(e => e.id) },
+      timestamp: { gte: ninetyDaysAgo },
+    },
+    orderBy: { timestamp: 'asc' },
+  });
+
+  // Group pings by endpoint ID
+  const pingsByEndpoint = new Map<number, typeof allPings>();
+  for (const ping of allPings) {
+    const existing = pingsByEndpoint.get(ping.endpointId) || [];
+    existing.push(ping);
+    pingsByEndpoint.set(ping.endpointId, existing);
+  }
+
+  // Pre-generate all days once
+  const allDays = eachDayOfInterval({ start: ninetyDaysAgo, end: now });
+
+  // Calculate stats for each endpoint
+  const endpointsWithStats = endpoints.map((endpoint) => {
+    const pings = pingsByEndpoint.get(endpoint.id) || [];
+
+    const endpointCreatedDate = new Date(endpoint.createdAt);
+    endpointCreatedDate.setHours(0, 0, 0, 0);
+
+    // Group pings by date string for O(1) lookup
+    const pingsByDate = new Map<string, { total: number; successful: number }>();
+    for (const ping of pings) {
+      const dateStr = format(new Date(ping.timestamp), 'yyyy-MM-dd');
+      const existing = pingsByDate.get(dateStr) || { total: 0, successful: 0 };
+      existing.total++;
+      if (ping.success) existing.successful++;
+      pingsByDate.set(dateStr, existing);
     }
 
-    // Get all active endpoints
-    const endpoints = await prisma.endpoint.findMany({
-      where: { isActive: true },
-      orderBy: { sortOrder: 'asc' },
+    const dayStats = allDays.map((date) => {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      const dayStart = new Date(date);
+      dayStart.setHours(0, 0, 0, 0);
+
+      const isBeforeCreation = dayStart < endpointCreatedDate;
+      const dayData = pingsByDate.get(dateStr);
+
+      const totalChecks = dayData?.total || 0;
+      const successfulChecks = dayData?.successful || 0;
+      const uptimePercentage = totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 100;
+
+      let status: 'operational' | 'degraded' | 'down' | 'no-data';
+
+      if (isBeforeCreation) {
+        status = 'no-data';
+      } else if (totalChecks === 0) {
+        status = 'no-data';
+      } else if (uptimePercentage >= 99) {
+        status = 'operational';
+      } else if (uptimePercentage >= 98) {
+        status = 'degraded';
+      } else {
+        status = 'down';
+      }
+
+      return {
+        date: dateStr,
+        uptimePercentage,
+        totalChecks,
+        successfulChecks,
+        status,
+      };
     });
 
-    // Calculate 90-day stats for each endpoint
-    const endpointsWithStats = await Promise.all(
-      endpoints.map(async (endpoint) => {
-        const now = new Date();
-        const ninetyDaysAgo = subDays(now, 90);
+    // Calculate overall uptime
+    const totalPings = pings.length;
+    const successfulPings = pings.filter((p) => p.success).length;
+    const overallUptime = totalPings > 0 ? (successfulPings / totalPings) * 100 : 100;
 
-        // Get all pings for the last 90 days
-        const pings = await prisma.ping.findMany({
-          where: {
-            endpointId: endpoint.id,
-            timestamp: {
-              gte: ninetyDaysAgo,
-            },
-          },
-          orderBy: { timestamp: 'asc' },
-        });
+    // Get current status (last 10 pings)
+    const recentPings = pings.slice(-10);
+    const recentSuccessRate =
+      recentPings.length > 0
+        ? (recentPings.filter((p) => p.success).length / recentPings.length) * 100
+        : 100;
 
-        // Group pings by day
-        const endpointCreatedDate = new Date(endpoint.createdAt);
-        endpointCreatedDate.setHours(0, 0, 0, 0);
+    let currentStatus: 'operational' | 'degraded' | 'down';
+    if (recentSuccessRate >= 90) {
+      currentStatus = 'operational';
+    } else if (recentSuccessRate >= 50) {
+      currentStatus = 'degraded';
+    } else {
+      currentStatus = 'down';
+    }
 
-        const dayStats = eachDayOfInterval({
-          start: ninetyDaysAgo,
-          end: now,
-        }).map((date) => {
-          const dateStr = format(date, 'yyyy-MM-dd');
-          const dayStart = new Date(date);
-          dayStart.setHours(0, 0, 0, 0);
-          const dayEnd = new Date(date);
-          dayEnd.setHours(23, 59, 59, 999);
+    return {
+      endpointId: endpoint.id,
+      endpointTitle: endpoint.title,
+      endpointUrl: endpoint.url,
+      overallUptime,
+      last90Days: dayStats,
+      currentStatus,
+    };
+  });
 
-          // Check if this day is before the endpoint was created
-          const isBeforeCreation = dayStart < endpointCreatedDate;
+  return {
+    config,
+    endpoints: endpointsWithStats,
+  };
+}
 
-          const dayPings = pings.filter((ping) => {
-            const pingDate = new Date(ping.timestamp);
-            return pingDate >= dayStart && pingDate <= dayEnd;
-          });
+export async function GET() {
+  try {
+    const now = Date.now();
 
-          const totalChecks = dayPings.length;
-          const successfulChecks = dayPings.filter((p) => p.success).length;
-          const uptimePercentage = totalChecks > 0 ? (successfulChecks / totalChecks) * 100 : 100;
+    // Return cached data if still valid
+    if (cachedData && (now - cacheTimestamp) < CACHE_TTL) {
+      return NextResponse.json(cachedData);
+    }
 
-          let status: 'operational' | 'degraded' | 'down' | 'no-data';
+    // Compute fresh data
+    const data = await computeStatusData();
 
-          // If before creation date, mark as no-data
-          if (isBeforeCreation) {
-            status = 'no-data';
-          } else if (totalChecks === 0) {
-            status = 'no-data';
-          } else if (uptimePercentage >= 99) {
-            status = 'operational';
-          } else if (uptimePercentage >= 98) {
-            status = 'degraded';
-          } else {
-            status = 'down';
-          }
+    // Update cache
+    cachedData = data;
+    cacheTimestamp = now;
 
-          return {
-            date: dateStr,
-            uptimePercentage,
-            totalChecks,
-            successfulChecks,
-            status,
-          };
-        });
-
-        // Calculate overall uptime
-        const totalPings = pings.length;
-        const successfulPings = pings.filter((p) => p.success).length;
-        const overallUptime = totalPings > 0 ? (successfulPings / totalPings) * 100 : 100;
-
-        // Get current status (last 10 pings)
-        const recentPings = pings.slice(-10);
-        const recentSuccessRate =
-          recentPings.length > 0
-            ? (recentPings.filter((p) => p.success).length / recentPings.length) * 100
-            : 100;
-
-        let currentStatus: 'operational' | 'degraded' | 'down';
-        if (recentSuccessRate >= 90) {
-          currentStatus = 'operational';
-        } else if (recentSuccessRate >= 50) {
-          currentStatus = 'degraded';
-        } else {
-          currentStatus = 'down';
-        }
-
-        return {
-          endpointId: endpoint.id,
-          endpointTitle: endpoint.title,
-          endpointUrl: endpoint.url,
-          overallUptime,
-          last90Days: dayStats,
-          currentStatus,
-        };
-      })
-    );
-
-    return NextResponse.json({
-      config,
-      endpoints: endpointsWithStats,
-    });
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching status data:', error);
     return NextResponse.json({ error: 'Failed to fetch status data' }, { status: 500 });

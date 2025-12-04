@@ -128,7 +128,7 @@ export default function HomePage() {
         }}
       />
 
-      <header className="bg-white/80 backdrop-blur-sm relative z-10 border-b border-gray-200">
+      <header className="bg-white/80 backdrop-blur-sm relative z-10">
         <div className="max-w-[50%] mx-auto h-16 flex items-center gap-3">
           {statusData.config.logoUrl && (
             <img
@@ -238,7 +238,7 @@ export default function HomePage() {
       </main>
 
       {statusData.config.footerText && (
-        <footer className="bg-white/80 backdrop-blur-sm relative z-10 py-4 border-t border-gray-200">
+        <footer className="bg-white/80 backdrop-blur-sm relative z-10 py-4">
           <div className="max-w-[50%] mx-auto text-center text-xs text-gray-500">
             {statusData.config.footerText}
           </div>

@@ -10,29 +10,30 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@prisma/client": "^6.0.1",
+    "axios": "^1.7.9",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^11.11.17",
+    "geist": "^1.5.1",
+    "lucide-react": "^0.460.0",
     "next": "^15.0.3",
+    "node-cron": "^3.0.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@prisma/client": "^6.0.1",
-    "framer-motion": "^11.11.17",
-    "node-cron": "^3.0.3",
-    "axios": "^1.7.9",
-    "date-fns": "^4.1.0",
-    "lucide-react": "^0.460.0",
-    "clsx": "^2.1.1",
     "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
     "@types/node": "^22.10.1",
+    "@types/node-cron": "^3.0.11",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.2",
-    "@types/node-cron": "^3.0.11",
-    "postcss": "^8.4.49",
     "autoprefixer": "^10.4.20",
-    "tailwindcss": "^3.4.15",
     "eslint": "^9.15.0",
     "eslint-config-next": "^15.0.3",
-    "prisma": "^6.0.1"
+    "postcss": "^8.4.49",
+    "prisma": "^6.0.1",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.7.2"
   }
 }

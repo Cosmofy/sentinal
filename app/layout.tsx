@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { GeistSans } from "geist/font/sans";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -12,7 +13,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" style={{ backgroundColor: '#ffffff' }}>
+    <html lang="en" className={GeistSans.className} style={{ backgroundColor: '#ffffff' }}>
       <head>
         <style dangerouslySetInnerHTML={{
           __html: `
@@ -33,7 +34,7 @@ export default function RootLayout({
           `
         }} />
       </head>
-      <body style={{ backgroundColor: '#ffffff' }}>
+      <body className={GeistSans.className} style={{ backgroundColor: '#ffffff' }}>
         {children}
       </body>
     </html>
