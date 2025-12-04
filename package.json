@@ -16,7 +16,6 @@
     "date-fns": "^4.1.0",
     "framer-motion": "^11.11.17",
     "geist": "^1.5.1",
-    "lucide-react": "^0.460.0",
     "next": "^15.0.3",
     "node-cron": "^3.0.3",
     "react": "^19.0.0",

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Plus, Trash2, Edit2, CheckCircle2, Settings, ExternalLink, LogOut, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, Edit2, CheckCircle2, Settings, ExternalLink, LogOut, GripVertical, Eye, EyeOff } from '@/components/icons';
 
 interface Endpoint {
   id: number;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, AlertCircle, XCircle, Check, X } from 'lucide-react';
+import { CheckCircle2, AlertCircle, XCircle, Check, X } from '@/components/icons';
 
 interface DayStats {
   date: string;

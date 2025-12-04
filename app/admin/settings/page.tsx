@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Settings, ExternalLink, LogOut } from 'lucide-react';
+import { ArrowLeft, Settings, ExternalLink, LogOut } from '@/components/icons';
 import Link from 'next/link';
 
 interface StatusPageConfig {
