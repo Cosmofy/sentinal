@@ -3,6 +3,7 @@
 interface IconProps {
   className?: string;
   strokeWidth?: number;
+  fill?: string;
 }
 
 export function Check({ className, strokeWidth = 1.5 }: IconProps) {
@@ -44,11 +45,11 @@ export function X({ className, strokeWidth = 1.5 }: IconProps) {
   );
 }
 
-export function CheckCircle2({ className, strokeWidth = 1.5 }: IconProps) {
+export function CheckCircle2({ className, strokeWidth = 1.5, fill = "none" }: IconProps) {
   return (
     <svg
       className={className}
-      fill="none"
+      fill={fill}
       height="24"
       shapeRendering="geometricPrecision"
       stroke="currentColor"
