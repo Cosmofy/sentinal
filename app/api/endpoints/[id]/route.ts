@@ -32,13 +32,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
     const body = await request.json();
-    const { title, url, intervalSeconds, expectedStatusCode, isActive, sortOrder } = body;
+    const { title, url, type, port, intervalSeconds, expectedStatusCode, isActive, sortOrder } = body;
 
     const endpoint = await prisma.endpoint.update({
       where: { id: parseInt(id) },
       data: {
         ...(title !== undefined && { title }),
         ...(url !== undefined && { url }),
+        ...(type !== undefined && { type }),
+        ...(port !== undefined && { port }),
         ...(intervalSeconds !== undefined && { intervalSeconds }),
         ...(expectedStatusCode !== undefined && { expectedStatusCode }),
         ...(isActive !== undefined && { isActive }),

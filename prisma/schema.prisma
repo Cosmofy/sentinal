@@ -28,6 +28,8 @@ model Endpoint {
   id                 Int      @id @default(autoincrement())
   title              String
   url                String
+  type               String   @default("http")  // "http" or "minecraft"
+  port               Int?                       // For Minecraft servers
   intervalSeconds    Int      @default(60) @map("interval_seconds")
   expectedStatusCode Int      @default(200) @map("expected_status_code")
   isActive           Boolean  @default(true) @map("is_active")
@@ -48,6 +50,9 @@ model Ping {
   responseTimeMs Float?   @map("response_time_ms")
   success        Boolean
   errorMessage   String?  @map("error_message") @db.Text
+  // Minecraft-specific fields
+  playersOnline  Int?     @map("players_online")
+  playersMax     Int?     @map("players_max")
 
   endpoint Endpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
 

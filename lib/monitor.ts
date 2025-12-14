@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { prisma } from './prisma';
 import cron from 'node-cron';
+import { status as mcStatus } from 'minecraft-server-util';
 
 interface EndpointJob {
   endpointId: number;
@@ -20,12 +21,20 @@ class MonitorService {
       return;
     }
 
+    if (endpoint.type === 'minecraft') {
+      await this.pingMinecraftServer(endpoint);
+    } else {
+      await this.pingHttpEndpoint(endpoint);
+    }
+  }
+
+  private async pingHttpEndpoint(endpoint: { id: number; title: string; url: string; expectedStatusCode: number }) {
     const startTime = Date.now();
 
     try {
       const response = await axios.get(endpoint.url, {
         timeout: 30000,
-        validateStatus: () => true, // Don't throw on any status code
+        validateStatus: () => true,
       });
 
       const responseTimeMs = Date.now() - startTime;
@@ -63,20 +72,55 @@ class MonitorService {
     }
   }
 
+  private async pingMinecraftServer(endpoint: { id: number; title: string; url: string; port: number | null }) {
+    const startTime = Date.now();
+    const port = endpoint.port || 25565;
+
+    try {
+      const response = await mcStatus(endpoint.url, port, { timeout: 10000 });
+      const responseTimeMs = Date.now() - startTime;
+
+      await prisma.ping.create({
+        data: {
+          endpointId: endpoint.id,
+          statusCode: null,
+          responseTimeMs,
+          success: true,
+          playersOnline: response.players.online,
+          playersMax: response.players.max,
+        },
+      });
+
+      console.log(
+        `[${new Date().toISOString()}] Pinged MC ${endpoint.title}: ${response.players.online}/${response.players.max} players in ${responseTimeMs.toFixed(2)}ms`
+      );
+    } catch (error: any) {
+      const responseTimeMs = Date.now() - startTime;
+
+      await prisma.ping.create({
+        data: {
+          endpointId: endpoint.id,
+          statusCode: null,
+          responseTimeMs,
+          success: false,
+          errorMessage: error.message || 'Server offline',
+        },
+      });
+
+      console.error(`[${new Date().toISOString()}] Error pinging MC ${endpoint.title}: ${error.message}`);
+    }
+  }
+
   startMonitoring(endpointId: number, intervalSeconds: number) {
-    // Stop existing job if any
     this.stopMonitoring(endpointId);
 
-    // Convert seconds to cron expression
-    // For intervals less than 60 seconds, use */N format
-    // For 60 seconds and above, convert to minutes
     let cronExpression: string;
 
     if (intervalSeconds < 60) {
-      cronExpression = `*/${intervalSeconds} * * * * *`; // Every N seconds
+      cronExpression = `*/${intervalSeconds} * * * * *`;
     } else {
       const minutes = Math.floor(intervalSeconds / 60);
-      cronExpression = `*/${minutes} * * * *`; // Every N minutes
+      cronExpression = `*/${minutes} * * * *`;
     }
 
     const task = cron.schedule(cronExpression, () => {
@@ -97,16 +141,13 @@ class MonitorService {
   }
 
   async syncAllEndpoints() {
-    // Stop all current jobs
     this.jobs.forEach((job) => job.task.stop());
     this.jobs.clear();
 
-    // Get all active endpoints
     const endpoints = await prisma.endpoint.findMany({
       where: { isActive: true },
     });
 
-    // Start monitoring for each endpoint
     endpoints.forEach((endpoint) => {
       this.startMonitoring(endpoint.id, endpoint.intervalSeconds);
     });

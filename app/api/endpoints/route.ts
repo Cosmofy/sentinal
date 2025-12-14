@@ -20,7 +20,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, url, intervalSeconds, expectedStatusCode, isActive } = body;
+    const { title, url, type, port, intervalSeconds, expectedStatusCode, isActive } = body;
 
     if (!title || !url) {
       return NextResponse.json({ error: 'Title and URL are required' }, { status: 400 });
@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         url,
+        type: type || 'http',
+        port: type === 'minecraft' ? (port || 25565) : null,
         intervalSeconds: intervalSeconds || 60,
         expectedStatusCode: expectedStatusCode || 200,
         isActive: isActive !== undefined ? isActive : true,
