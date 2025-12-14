@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { GeistMono } from 'geist/font/mono';
 import { CheckCircle2, AlertCircle, XCircle, Check, X } from '@/components/icons';
 
 interface DayStats {
@@ -15,7 +16,12 @@ interface DayStats {
 interface EndpointStats {
   endpointId: number;
   endpointTitle: string;
+  endpointDescription: string | null;
   endpointUrl: string;
+  endpointType: 'http' | 'minecraft';
+  serverIp: string | null;
+  whitelistEnabled: boolean;
+  modpackUrl: string | null;
   overallUptime: number;
   last90Days: DayStats[];
   currentStatus: 'operational' | 'degraded' | 'down';
@@ -160,7 +166,8 @@ export default function HomePage() {
                 transition={{ duration: 0.3, delay: index * 0.05 }}
                 className="bg-white rounded-lg border border-gray-200 p-4"
               >
-                <div className="flex items-center justify-between gap-2 mb-2">
+                {/* Row 1: Title + 90 days/uptime */}
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full flex-shrink-0 flex items-center justify-center ${
                       endpoint.currentStatus === 'operational' ? 'bg-emerald-500' :
@@ -174,17 +181,63 @@ export default function HomePage() {
                       ) : null}
                     </div>
                     <h3 className="font-medium text-gray-900 text-sm">{endpoint.endpointTitle}</h3>
-                    <span className="text-xs text-gray-500">· 90 days</span>
+                    {endpoint.endpointType === 'minecraft' && endpoint.modpackUrl && (
+                      <>
+                        <span className="text-gray-400">·</span>
+                        <a
+                          href={endpoint.modpackUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-700 hover:text-blue-900 inline-flex items-center gap-0.5"
+                        >
+                          Download Modpack
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M7 17L17 7" />
+                            <path d="M7 7h10v10" />
+                          </svg>
+                        </a>
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="text-sm text-gray-900 font-semibold truncate">
-                      {endpoint.endpointUrl.replace(/^https?:\/\//, '')}
-                    </div>
+                    <span className="text-sm text-gray-500">90 days</span>
                     <span className="text-gray-400">·</span>
-                    <span className="text-sm text-gray-600 whitespace-nowrap">
+                    <span className={`text-sm whitespace-nowrap ${
+                      endpoint.overallUptime >= 98.5 ? 'text-emerald-600' :
+                      endpoint.overallUptime >= 90 ? 'text-amber-600' :
+                      'text-red-600'
+                    }`}>
                       {endpoint.overallUptime.toFixed(2)}% uptime
                     </span>
                   </div>
+                </div>
+
+                {/* Row 2: Description (left) + Whitelist/IP (right) for Minecraft, or URL for HTTP */}
+                <div className="flex items-center justify-between gap-2 mt-1 mb-2">
+                  <div className="flex-1">
+                    {endpoint.endpointDescription ? (
+                      <p className="text-sm text-gray-500">{endpoint.endpointDescription}</p>
+                    ) : (
+                      endpoint.endpointType !== 'minecraft' && (
+                        <p className="text-sm text-gray-500">{endpoint.endpointUrl.replace(/^https?:\/\//, '')}</p>
+                      )
+                    )}
+                  </div>
+                  {endpoint.endpointType === 'minecraft' && (
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm whitespace-nowrap ${endpoint.whitelistEnabled ? 'text-red-600' : 'text-gray-500'}`}>
+                        {endpoint.whitelistEnabled ? 'Whitelist ON' : 'Whitelist OFF'}
+                      </span>
+                      {endpoint.serverIp && (
+                        <>
+                          <span className="text-gray-400">·</span>
+                          <span className={`text-sm text-gray-900 ${GeistMono.className}`}>
+                            {endpoint.serverIp}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-1 w-full relative">

@@ -27,9 +27,13 @@ model StatusPageConfig {
 model Endpoint {
   id                 Int      @id @default(autoincrement())
   title              String
+  description        String?  // Optional description shown below title
   url                String
   type               String   @default("http")  // "http" or "minecraft"
   port               Int?                       // For Minecraft servers
+  serverIp           String?  @map("server_ip") // Display IP for players (e.g. "mc.example.com")
+  whitelistEnabled   Boolean  @default(false) @map("whitelist_enabled")
+  modpackUrl         String?  @map("modpack_url") // Download link for mod pack
   intervalSeconds    Int      @default(60) @map("interval_seconds")
   expectedStatusCode Int      @default(200) @map("expected_status_code")
   isActive           Boolean  @default(true) @map("is_active")

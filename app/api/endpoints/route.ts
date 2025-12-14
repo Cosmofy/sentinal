@@ -20,7 +20,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, url, type, port, intervalSeconds, expectedStatusCode, isActive } = body;
+    const { title, description, url, type, port, serverIp, whitelistEnabled, modpackUrl, intervalSeconds, expectedStatusCode, isActive } = body;
 
     if (!title || !url) {
       return NextResponse.json({ error: 'Title and URL are required' }, { status: 400 });
@@ -32,12 +32,17 @@ export async function POST(request: NextRequest) {
       select: { sortOrder: true },
     });
 
+    const isMinecraft = type === 'minecraft';
     const endpoint = await prisma.endpoint.create({
       data: {
         title,
+        description: description || null,
         url,
         type: type || 'http',
-        port: type === 'minecraft' ? (port || 25565) : null,
+        port: isMinecraft ? (port || 25565) : null,
+        serverIp: isMinecraft ? serverIp : null,
+        whitelistEnabled: isMinecraft ? (whitelistEnabled || false) : false,
+        modpackUrl: isMinecraft ? modpackUrl : null,
         intervalSeconds: intervalSeconds || 60,
         expectedStatusCode: expectedStatusCode || 200,
         isActive: isActive !== undefined ? isActive : true,

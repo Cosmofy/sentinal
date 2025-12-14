@@ -122,7 +122,12 @@ async function computeStatusData() {
     return {
       endpointId: endpoint.id,
       endpointTitle: endpoint.title,
+      endpointDescription: endpoint.description,
       endpointUrl: endpoint.url,
+      endpointType: endpoint.type,
+      serverIp: endpoint.serverIp,
+      whitelistEnabled: endpoint.whitelistEnabled,
+      modpackUrl: endpoint.modpackUrl,
       overallUptime,
       last90Days: dayStats,
       currentStatus,

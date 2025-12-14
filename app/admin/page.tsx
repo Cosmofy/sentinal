@@ -8,7 +8,13 @@ import { Plus, Trash2, Edit2, CheckCircle2, Settings, ExternalLink, LogOut, Grip
 interface Endpoint {
   id: number;
   title: string;
+  description: string | null;
   url: string;
+  type: 'http' | 'minecraft';
+  port: number | null;
+  serverIp: string | null;
+  whitelistEnabled: boolean;
+  modpackUrl: string | null;
   intervalSeconds: number;
   expectedStatusCode: number;
   isActive: boolean;
@@ -26,7 +32,13 @@ export default function AdminPage() {
 
   const [formData, setFormData] = useState({
     title: '',
+    description: '',
     url: '',
+    type: 'http' as 'http' | 'minecraft',
+    port: 25565,
+    serverIp: '',
+    whitelistEnabled: false,
+    modpackUrl: '',
     intervalSeconds: 60,
     expectedStatusCode: 200,
   });
@@ -81,7 +93,7 @@ export default function AdminPage() {
         });
       }
 
-      setFormData({ title: '', url: '', intervalSeconds: 60, expectedStatusCode: 200 });
+      setFormData({ title: '', description: '', url: '', type: 'http', port: 25565, serverIp: '', whitelistEnabled: false, modpackUrl: '', intervalSeconds: 60, expectedStatusCode: 200 });
       setShowAddForm(false);
       setEditingId(null);
       fetchEndpoints();
@@ -93,7 +105,13 @@ export default function AdminPage() {
   const handleEdit = (endpoint: Endpoint) => {
     setFormData({
       title: endpoint.title,
+      description: endpoint.description || '',
       url: endpoint.url,
+      type: endpoint.type,
+      port: endpoint.port || 25565,
+      serverIp: endpoint.serverIp || '',
+      whitelistEnabled: endpoint.whitelistEnabled,
+      modpackUrl: endpoint.modpackUrl || '',
       intervalSeconds: endpoint.intervalSeconds,
       expectedStatusCode: endpoint.expectedStatusCode,
     });
@@ -215,7 +233,7 @@ export default function AdminPage() {
             onClick={() => {
               setShowAddForm(!showAddForm);
               setEditingId(null);
-              setFormData({ title: '', url: '', intervalSeconds: 60, expectedStatusCode: 200 });
+              setFormData({ title: '', description: '', url: '', type: 'http', port: 25565, serverIp: '', whitelistEnabled: false, modpackUrl: '', intervalSeconds: 60, expectedStatusCode: 200 });
             }}
             className="inline-flex items-center gap-2 px-4 h-9 bg-black hover:bg-gray-800 text-white text-sm font-medium rounded-md transition-all shadow-sm hover:shadow"
           >
@@ -253,17 +271,97 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    URL
+                    Description
                   </label>
                   <input
-                    type="url"
+                    type="text"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
+                    placeholder="Optional description"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Type
+                  </label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value as 'http' | 'minecraft' })}
+                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
+                  >
+                    <option value="http">HTTP</option>
+                    <option value="minecraft">Minecraft</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {formData.type === 'minecraft' ? 'Server Address' : 'URL'}
+                  </label>
+                  <input
+                    type={formData.type === 'minecraft' ? 'text' : 'url'}
                     value={formData.url}
                     onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                     className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
-                    placeholder="https://api.example.com/health"
+                    placeholder={formData.type === 'minecraft' ? 'mc.example.com' : 'https://api.example.com/health'}
                     required
                   />
                 </div>
+                {formData.type === 'minecraft' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Port
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.port}
+                      onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })}
+                      className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
+                      placeholder="25565"
+                    />
+                  </div>
+                )}
+                {formData.type === 'minecraft' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Display IP (for players)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.serverIp}
+                      onChange={(e) => setFormData({ ...formData, serverIp: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all font-mono"
+                      placeholder="january.mc.arryan.xyz"
+                    />
+                  </div>
+                )}
+                {formData.type === 'minecraft' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Modpack URL
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.modpackUrl}
+                      onChange={(e) => setFormData({ ...formData, modpackUrl: e.target.value })}
+                      className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
+                      placeholder="https://example.com/modpack.zip"
+                    />
+                  </div>
+                )}
+                {formData.type === 'minecraft' && (
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.whitelistEnabled}
+                        onChange={(e) => setFormData({ ...formData, whitelistEnabled: e.target.checked })}
+                        className="w-4 h-4 rounded border-gray-300 text-black focus:ring-gray-900"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Whitelist Enabled</span>
+                    </label>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Interval (seconds)
@@ -279,22 +377,24 @@ export default function AdminPage() {
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Expected Status
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.expectedStatusCode}
-                    onChange={(e) =>
-                      setFormData({ ...formData, expectedStatusCode: parseInt(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
-                    min="100"
-                    max="599"
-                    required
-                  />
-                </div>
+                {formData.type === 'http' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Expected Status
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.expectedStatusCode}
+                      onChange={(e) =>
+                        setFormData({ ...formData, expectedStatusCode: parseInt(e.target.value) })
+                      }
+                      className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
+                      min="100"
+                      max="599"
+                      required
+                    />
+                  </div>
+                )}
               </div>
               <div className="flex gap-2 pt-2">
                 <button
@@ -308,7 +408,7 @@ export default function AdminPage() {
                   onClick={() => {
                     setShowAddForm(false);
                     setEditingId(null);
-                    setFormData({ title: '', url: '', intervalSeconds: 60, expectedStatusCode: 200 });
+                    setFormData({ title: '', description: '', url: '', type: 'http', port: 25565, serverIp: '', whitelistEnabled: false, modpackUrl: '', intervalSeconds: 60, expectedStatusCode: 200 });
                   }}
                   className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-900 text-sm font-medium rounded-md"
                 >
@@ -364,12 +464,27 @@ export default function AdminPage() {
                         </div>
                         <p className="text-xs text-gray-600 truncate">{endpoint.url}</p>
                         <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                          <span className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 uppercase text-[10px] font-medium">
+                            {endpoint.type}
+                          </span>
                           <span>{endpoint.intervalSeconds}s</span>
-                          <span>Status {endpoint.expectedStatusCode}</span>
+                          {endpoint.type === 'http' && <span>Status {endpoint.expectedStatusCode}</span>}
+                          {endpoint.type === 'minecraft' && endpoint.port && <span>:{endpoint.port}</span>}
+                          {endpoint.type === 'minecraft' && (
+                            <span className={endpoint.whitelistEnabled ? 'text-amber-600' : 'text-gray-400'}>
+                              {endpoint.whitelistEnabled ? 'Whitelist ON' : 'Whitelist OFF'}
+                            </span>
+                          )}
                           <span className={endpoint.isActive ? 'text-emerald-600' : 'text-gray-400'}>
                             {endpoint.isActive ? 'Active' : 'Paused'}
                           </span>
                         </div>
+                        {endpoint.type === 'minecraft' && endpoint.serverIp && (
+                          <p className="text-xs text-gray-500 font-mono mt-1">{endpoint.serverIp}</p>
+                        )}
+                        {endpoint.type === 'minecraft' && endpoint.modpackUrl && (
+                          <p className="text-xs text-blue-500 mt-1 truncate">Modpack: {endpoint.modpackUrl}</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-1">
                         <button
@@ -424,16 +539,93 @@ export default function AdminPage() {
                         </div>
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
-                            URL
+                            Description
                           </label>
                           <input
-                            type="url"
+                            type="text"
+                            value={formData.description}
+                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
+                            placeholder="Optional description"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Type
+                          </label>
+                          <select
+                            value={formData.type}
+                            onChange={(e) => setFormData({ ...formData, type: e.target.value as 'http' | 'minecraft' })}
+                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
+                          >
+                            <option value="http">HTTP</option>
+                            <option value="minecraft">Minecraft</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            {formData.type === 'minecraft' ? 'Server Address' : 'URL'}
+                          </label>
+                          <input
+                            type={formData.type === 'minecraft' ? 'text' : 'url'}
                             value={formData.url}
                             onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                             className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
                             required
                           />
                         </div>
+                        {formData.type === 'minecraft' && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Port
+                            </label>
+                            <input
+                              type="number"
+                              value={formData.port}
+                              onChange={(e) => setFormData({ ...formData, port: parseInt(e.target.value) })}
+                              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
+                            />
+                          </div>
+                        )}
+                        {formData.type === 'minecraft' && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Display IP (for players)
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.serverIp}
+                              onChange={(e) => setFormData({ ...formData, serverIp: e.target.value })}
+                              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all font-mono"
+                            />
+                          </div>
+                        )}
+                        {formData.type === 'minecraft' && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Modpack URL
+                            </label>
+                            <input
+                              type="url"
+                              value={formData.modpackUrl}
+                              onChange={(e) => setFormData({ ...formData, modpackUrl: e.target.value })}
+                              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
+                            />
+                          </div>
+                        )}
+                        {formData.type === 'minecraft' && (
+                          <div className="flex items-center gap-3">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.whitelistEnabled}
+                                onChange={(e) => setFormData({ ...formData, whitelistEnabled: e.target.checked })}
+                                className="w-4 h-4 rounded border-gray-300 text-black focus:ring-gray-900"
+                              />
+                              <span className="text-xs font-medium text-gray-700">Whitelist Enabled</span>
+                            </label>
+                          </div>
+                        )}
                         <div>
                           <label className="block text-xs font-medium text-gray-700 mb-1">
                             Interval (seconds)
@@ -449,22 +641,24 @@ export default function AdminPage() {
                             required
                           />
                         </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-700 mb-1">
-                            Expected Status
-                          </label>
-                          <input
-                            type="number"
-                            value={formData.expectedStatusCode}
-                            onChange={(e) =>
-                              setFormData({ ...formData, expectedStatusCode: parseInt(e.target.value) })
-                            }
-                            className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
-                            min="100"
-                            max="599"
-                            required
-                          />
-                        </div>
+                        {formData.type === 'http' && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-700 mb-1">
+                              Expected Status
+                            </label>
+                            <input
+                              type="number"
+                              value={formData.expectedStatusCode}
+                              onChange={(e) =>
+                                setFormData({ ...formData, expectedStatusCode: parseInt(e.target.value) })
+                              }
+                              className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded-md hover:border-gray-400 focus:border-gray-900 focus:ring-1 focus:ring-gray-900 outline-none transition-all"
+                              min="100"
+                              max="599"
+                              required
+                            />
+                          </div>
+                        )}
                       </div>
                       <div className="flex gap-2 pt-1">
                         <button
@@ -477,7 +671,7 @@ export default function AdminPage() {
                           type="button"
                           onClick={() => {
                             setEditingId(null);
-                            setFormData({ title: '', url: '', intervalSeconds: 60, expectedStatusCode: 200 });
+                            setFormData({ title: '', description: '', url: '', type: 'http', port: 25565, serverIp: '', whitelistEnabled: false, modpackUrl: '', intervalSeconds: 60, expectedStatusCode: 200 });
                           }}
                           className="px-3 py-1.5 bg-white hover:bg-gray-100 text-gray-900 text-sm font-medium rounded-md border border-gray-300"
                         >
