@@ -86,9 +86,9 @@ async function computeStatusData() {
         status = 'no-data';
       } else if (totalChecks === 0) {
         status = 'no-data';
-      } else if (uptimePercentage >= 99) {
+      } else if (uptimePercentage >= 98.5) {
         status = 'operational';
-      } else if (uptimePercentage >= 98) {
+      } else if (uptimePercentage >= 90) {
         status = 'degraded';
       } else {
         status = 'down';
