@@ -202,11 +202,7 @@ export default function HomePage() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-gray-500">90 days</span>
                     <span className="text-gray-400">·</span>
-                    <span className={`text-sm whitespace-nowrap ${
-                      endpoint.overallUptime >= 98.5 ? 'text-emerald-600' :
-                      endpoint.overallUptime >= 90 ? 'text-amber-600' :
-                      'text-red-600'
-                    }`}>
+                    <span className="text-sm font-medium text-gray-900 whitespace-nowrap">
                       {endpoint.overallUptime.toFixed(2)}% uptime
                     </span>
                   </div>
