@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { subDays, format, eachDayOfInterval } from 'date-fns';
+import { subDays, eachDayOfInterval } from 'date-fns';
+
+// Format date as YYYY-MM-DD in UTC
+function formatDateUTC(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
 
 // In-memory cache
 let cachedData: any = null;
@@ -56,7 +61,7 @@ async function computeStatusData() {
     // Group pings by date string for O(1) lookup
     const pingsByDate = new Map<string, { total: number; successful: number }>();
     for (const ping of pings) {
-      const dateStr = format(new Date(ping.timestamp), 'yyyy-MM-dd');
+      const dateStr = formatDateUTC(new Date(ping.timestamp));
       const existing = pingsByDate.get(dateStr) || { total: 0, successful: 0 };
       existing.total++;
       if (ping.success) existing.successful++;
@@ -64,7 +69,7 @@ async function computeStatusData() {
     }
 
     const dayStats = allDays.map((date) => {
-      const dateStr = format(date, 'yyyy-MM-dd');
+      const dateStr = formatDateUTC(date);
       const dayStart = new Date(date);
       dayStart.setHours(0, 0, 0, 0);
 
